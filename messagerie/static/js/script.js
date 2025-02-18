@@ -7,14 +7,14 @@ function normaliserTexte(texte) {
     return texte.normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
 }
 
-// Fonction de déchiffrement César côté client
-function dechiffrerCesar(message, decalage) {
+// Fonction de chiffrement César
+function chiffrerCesar(message, decalage) {
     let resultat = "";
     for (let i = 0; i < message.length; i++) {
         let char = message[i];
         if (char.match(/[a-z]/i)) {
             let shift = char === char.toUpperCase() ? 65 : 97;
-            resultat += String.fromCharCode(((char.charCodeAt(0) - shift - decalage + 26) % 26 + shift));
+            resultat += String.fromCharCode(((char.charCodeAt(0) - shift + decalage) % 26) + shift);
         } else {
             resultat += char;
         }
@@ -22,26 +22,30 @@ function dechiffrerCesar(message, decalage) {
     return resultat;
 }
 
+// Fonction de déchiffrement César
+function dechiffrerCesar(message, decalage) {
+    return chiffrerCesar(message, 26 - decalage); // Déchiffrer en utilisant l'inverse du décalage
+}
+
 // Fonction pour appliquer XOR entre deux chaînes binaires
 function xorBinaire(binaire1, binaire2) {
-    // Assurez-vous que les deux chaînes ont la même longueur
-    const maxLen = Math.max(binaire1.length, binaire2.length);
-    binaire1 = binaire1.padStart(maxLen, '0');
-    binaire2 = binaire2.padStart(maxLen, '0');
-    // Appliquer XOR bit à bit
     let resultat = '';
-    for (let i = 0; i < maxLen; i++) {
-        resultat += (parseInt(binaire1[i]) ^ parseInt(binaire2[i]));
+    for (let i = 0; i < binaire1.length; i++) {
+        resultat += (parseInt(binaire1[i]) ^ (parseInt(binaire2[i % binaire2.length])));
     }
     return resultat;
 }
 
+// Fonction pour chiffrer la clé avec XOR
+function chiffrerCleXor(cle, cleSecrete = "1010") {
+    const cleBinaire = cle.toString(2).padStart(4, '0'); // Convertir en binaire sur 4 bits
+    return xorBinaire(cleBinaire, cleSecrete);
+}
+
 // Fonction pour déchiffrer la clé avec XOR
-function dechiffrerCleXor(cle_chiffree) {
-    // Appliquer XOR avec la clé secrète pour récupérer la clé binaire
-    const cle_binaire = xorBinaire(cle_chiffree, cleSecrete);
-    // Convertir la clé binaire en nombre
-    return parseInt(cle_binaire, 2);
+function dechiffrerCleXor(cleChiffree, cleSecrete = "1010") {
+    const cleBinaire = xorBinaire(cleChiffree, cleSecrete);
+    return parseInt(cleBinaire, 2); // Convertir en nombre
 }
 
 // Rejoindre une salle
@@ -67,12 +71,20 @@ document.getElementById("login-form").addEventListener("submit", (e) => {
 document.getElementById("chat-form").addEventListener("submit", (e) => {
     e.preventDefault();
     const message = document.getElementById("message").value;
+    const key = Math.floor(Math.random() * 25) + 1; // Générer une clé aléatoire entre 1 et 25
+
+    // Normaliser et chiffrer le message avant de l'envoyer
+    const messageNormalise = normaliserTexte(message);
+    const messageChiffre = chiffrerCesar(messageNormalise, key);
+
+    // Chiffrer la clé avec XOR
+    const keyChiffree = chiffrerCleXor(key);
 
     // Envoyer le message au serveur via une requête POST
     fetch("/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user: currentUser, room: currentRoom, msg: message }),
+        body: JSON.stringify({ user: currentUser, room: currentRoom, msg: messageChiffre, key: keyChiffree }),
     }).then(() => {
         document.getElementById("message").value = ""; // Effacer le champ de saisie
     });
@@ -89,10 +101,9 @@ function fetchMessages() {
             // Afficher les messages déchiffrés
             data.forEach((msg) => {
                 const messageElement = document.createElement("div");
-                const cle_dechiffree = dechiffrerCleXor(msg.key); // Déchiffrer la clé avec XOR
-                const messageClair = dechiffrerCesar(msg.msg, cle_dechiffree); // Déchiffrer le message
-                const messageNormalise = normaliserTexte(messageClair); // Normaliser le message
-                messageElement.innerHTML = `<strong>${msg.user}:</strong> ${messageNormalise}`;
+                const cleDechiffree = dechiffrerCleXor(msg.key); // Déchiffrer la clé avec XOR
+                const messageClair = dechiffrerCesar(msg.msg, cleDechiffree); // Déchiffrer le message
+                messageElement.innerHTML = `<strong>${msg.user}:</strong> ${messageClair}`;
                 messagesDiv.appendChild(messageElement);
             });
 
