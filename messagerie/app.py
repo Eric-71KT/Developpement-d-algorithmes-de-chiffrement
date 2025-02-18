@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS  # Pour gérer les requêtes cross-origin
-from chiffrement.cesar import chiffrer_cesar, dechiffrer_cesar  # Importer les fonctions de chiffrement César
+from chiffrement.cesar import chiffrer_cesar, dechiffrer_cesar, normaliser_texte  # Importer les fonctions de chiffrement César
 from chiffrement.xor import chiffrer_cle_xor, dechiffrer_cle_xor  # Importer les fonctions de chiffrement XOR
 import random
 
@@ -22,10 +22,13 @@ def send_message():
     username = data.get("user")
     room = data.get("room")
     message = data.get("msg")
-    key = data.get("key", 3)  # Clé de chiffrement (par défaut 3)
+    key = random.randint(1, 25)  # Générer une clé aléatoire entre 1 et 25
+
+    # Normaliser le message avant de le chiffrer
+    message_normalise = normaliser_texte(message)
 
     # Chiffrer le message avant de le stocker
-    message_chiffre = chiffrer_cesar(message, key)
+    message_chiffre = chiffrer_cesar(message_normalise, key)
 
     # Chiffrer la clé avec XOR
     key_chiffree = chiffrer_cle_xor(key)

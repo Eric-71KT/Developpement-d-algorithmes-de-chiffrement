@@ -1,10 +1,14 @@
 let currentUser = null;
 let currentRoom = null;
-const defaultKey = 3; // Clé de chiffrement par défaut
 const cleSecrete = "1010"; // Clé secrète pour XOR
 
+// Fonction pour normaliser les caractères accentués
+function normaliserTexte(texte) {
+    return texte.normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+}
+
 // Fonction de déchiffrement César côté client
-function dechiffrerCesar(message, decalage = defaultKey) {
+function dechiffrerCesar(message, decalage) {
     let resultat = "";
     for (let i = 0; i < message.length; i++) {
         let char = message[i];
@@ -68,7 +72,7 @@ document.getElementById("chat-form").addEventListener("submit", (e) => {
     fetch("/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user: currentUser, room: currentRoom, msg: message, key: defaultKey }),
+        body: JSON.stringify({ user: currentUser, room: currentRoom, msg: message }),
     }).then(() => {
         document.getElementById("message").value = ""; // Effacer le champ de saisie
     });
@@ -87,7 +91,8 @@ function fetchMessages() {
                 const messageElement = document.createElement("div");
                 const cle_dechiffree = dechiffrerCleXor(msg.key); // Déchiffrer la clé avec XOR
                 const messageClair = dechiffrerCesar(msg.msg, cle_dechiffree); // Déchiffrer le message
-                messageElement.innerHTML = `<strong>${msg.user}:</strong> ${messageClair}`;
+                const messageNormalise = normaliserTexte(messageClair); // Normaliser le message
+                messageElement.innerHTML = `<strong>${msg.user}:</strong> ${messageNormalise}`;
                 messagesDiv.appendChild(messageElement);
             });
 

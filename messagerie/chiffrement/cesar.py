@@ -1,5 +1,7 @@
+import unicodedata
+
 # Fonction de chiffrement César
-def chiffrer_cesar(message, decalage=3):
+def chiffrer_cesar(message, decalage):
     resultat = ""
     for char in message:
         if char.isalpha():
@@ -10,8 +12,12 @@ def chiffrer_cesar(message, decalage=3):
     return resultat
 
 # Fonction de déchiffrement César
-def dechiffrer_cesar(message, decalage=3):
+def dechiffrer_cesar(message, decalage):
     return chiffrer_cesar(message, -decalage)
+
+# Fonction pour normaliser les caractères accentués
+def normaliser_texte(texte):
+    return unicodedata.normalize('NFKD', texte).encode('ASCII', 'ignore').decode('ASCII')
 
 # Fonction pour convertir une clé numérique en lettre
 def cle_to_lettre(cle):
