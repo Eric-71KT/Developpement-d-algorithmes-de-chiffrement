@@ -16,14 +16,13 @@ def index():
 @app.route("/send", methods=["POST"])
 def send_message():
     data = request.json
-    username = data.get("user")
-    room = data.get("room")
-    message = data.get("msg")
-    key_chiffree = data.get("key")
-
-    # Stocker le message avec la clé chiffrée
-    messages.append({"user": username, "msg": message, "room": room, "key": key_chiffree})
-
+    messages.append({
+        "user": data.get("user"),
+        "msg": data.get("msg"),
+        "room": data.get("room"),
+        "key": data.get("key"),
+        "encryption": data.get("encryption", "cesar")  # Nouveau champ
+    })
     return jsonify({"status": "success"})
 
 # Route pour récupérer les messages

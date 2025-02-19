@@ -8,3 +8,8 @@
     border-radius: 5px;
     background-color: #f9f9f9;
 }
+
+#encryption-type {
+    width: 120px;
+    margin-right: 8px;
+}
