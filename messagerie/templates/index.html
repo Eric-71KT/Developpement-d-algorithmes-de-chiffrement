@@ -24,6 +24,7 @@
                         <div class="d-flex justify-content-between">
                             <select id="encryption-type" class="form-select w-auto">
                                 <option value="cesar">César</option>
+                                <option value="aes">AES</option>
                                 <option value="Clair">Clair</option>
                             </select>
                             <button id="leave-btn" class="btn btn-danger">Quitter la salle</button>
@@ -42,6 +43,7 @@
             </div>
         </div>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>

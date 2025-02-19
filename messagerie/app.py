@@ -21,7 +21,8 @@ def send_message():
         "msg": data.get("msg"),
         "room": data.get("room"),
         "key": data.get("key"),
-        "encryption": data.get("encryption", "cesar")  # Nouveau champ
+        "iv": data.get("iv"),
+        "encryption": data.get("encryption", "cesar")
     })
     return jsonify({"status": "success"})
 
