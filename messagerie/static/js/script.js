@@ -1,12 +1,45 @@
 let currentUser = null;
 let currentRoom = null;
 let currentEncryption = "cesar"; // Type de chiffrement par défaut
-const cleSecreteXOR = "1010"; // Clé secrète pour XOR (utilisée pour César)
+const cleSecreteXOR = "1010"; // Clé secrète pour XOR (utilisée pour César et Vigenère)
 const cleSecreteAES = CryptoJS.lib.WordArray.random(16).toString(CryptoJS.enc.Hex); // Clé secrète AES (128 bits)
 
 // Fonction pour normaliser les caractères accentués
 function normaliserTexte(texte) {
     return texte.normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+}
+
+// Fonction pour convertir un texte en binaire
+function texteToBinaire(texte) {
+    return texte.split('').map(char => char.charCodeAt(0).toString(2).padStart(8, '0')).join('');
+}
+
+// Fonction pour convertir un binaire en texte
+function binaireToTexte(binaire) {
+    return binaire.match(/.{1,8}/g).map(byte => String.fromCharCode(parseInt(byte, 2))).join('');
+}
+
+// Fonction pour appliquer XOR entre deux chaînes binaires
+function xorBinaire(binaire1, binaire2) {
+    let resultat = '';
+    for (let i = 0; i < binaire1.length; i++) {
+        resultat += (parseInt(binaire1[i]) ^ (parseInt(binaire2[i % binaire2.length])));
+    }
+    return resultat;
+}
+
+// Fonction de chiffrement XOR
+function chiffrerXOR(texte, cle) {
+    const texteBinaire = texteToBinaire(texte);
+    const cleBinaire = texteToBinaire(cle);
+    return xorBinaire(texteBinaire, cleBinaire);
+}
+
+// Fonction de déchiffrement XOR
+function dechiffrerXOR(texteChiffre, cle) {
+    const cleBinaire = texteToBinaire(cle);
+    const texteBinaire = xorBinaire(texteChiffre, cleBinaire);
+    return binaireToTexte(texteBinaire);
 }
 
 // Fonction de chiffrement César
@@ -16,7 +49,7 @@ function chiffrerCesar(message, decalage) {
         let char = message[i];
         if (char.match(/[a-z]/i)) {
             let shift = char === char.toUpperCase() ? 65 : 97;
-            resultat += String.fromCharCode(((char.charCodeAt(0) - shift + decalage) % 26) + shift);
+            resultat += String.fromCharCode(((char.charCodeAt(0) - shift + decalage) % 26 + shift));
         } else {
             resultat += char;
         }
@@ -26,53 +59,49 @@ function chiffrerCesar(message, decalage) {
 
 // Fonction de déchiffrement César
 function dechiffrerCesar(message, decalage) {
-    return chiffrerCesar(message, 26 - decalage); // Déchiffrer en utilisant l'inverse du décalage
+    return chiffrerCesar(message, 26 - decalage);
 }
 
-// Fonction pour appliquer XOR entre deux chaînes binaires (utilisée pour César)
-function xorBinaire(binaire1, binaire2) {
-    let resultat = '';
-    for (let i = 0; i < binaire1.length; i++) {
-        resultat += (parseInt(binaire1[i]) ^ (parseInt(binaire2[i % binaire2.length])));
+// Fonction de chiffrement Vigenère
+function chiffrerVigenere(message, cle) {
+    let resultat = "";
+    for (let i = 0; i < message.length; i++) {
+        let char = message[i];
+        if (char.match(/[a-z]/i)) {
+            let shift = char === char.toUpperCase() ? 65 : 97;
+            let decalage = cle.charCodeAt(i % cle.length) - 97; // Décalage basé sur la clé
+            resultat += String.fromCharCode(((char.charCodeAt(0) - shift + decalage) % 26 + shift));
+        } else {
+            resultat += char;
+        }
     }
     return resultat;
 }
 
-// Fonction pour chiffrer la clé avec XOR (utilisée pour César)
-function chiffrerCleXor(cle, cleSecrete = "1010") {
-    const cleBinaire = cle.toString(2).padStart(4, '0'); // Convertir en binaire sur 4 bits
-    return xorBinaire(cleBinaire, cleSecrete);
-}
-
-// Fonction pour déchiffrer la clé avec XOR (utilisée pour César)
-function dechiffrerCleXor(cleChiffree, cleSecrete = "1010") {
-    const cleBinaire = xorBinaire(cleChiffree, cleSecrete);
-    return parseInt(cleBinaire, 2); // Convertir en nombre
-}
-
-// Fonction pour appliquer XOR entre deux chaînes hexadécimales (utilisée pour AES)
-function xorHex(hex1, hex2) {
-    // Convertir les hex en tableaux de bytes
-    const bytes1 = CryptoJS.enc.Hex.parse(hex1);
-    const bytes2 = CryptoJS.enc.Hex.parse(hex2);
-    
-    // XOR byte par byte
-    const resultat = [];
-    for (let i = 0; i < bytes1.words.length; i++) {
-        resultat.push(bytes1.words[i] ^ bytes2.words[i]);
+// Fonction de déchiffrement Vigenère
+function dechiffrerVigenere(message, cle) {
+    let resultat = "";
+    for (let i = 0; i < message.length; i++) {
+        let char = message[i];
+        if (char.match(/[a-z]/i)) {
+            let shift = char === char.toUpperCase() ? 65 : 97;
+            let decalage = cle.charCodeAt(i % cle.length) - 97; // Décalage basé sur la clé
+            resultat += String.fromCharCode(((char.charCodeAt(0) - shift - decalage + 26) % 26 + shift));
+        } else {
+            resultat += char;
+        }
     }
-    
-    return CryptoJS.lib.WordArray.create(resultat).toString(CryptoJS.enc.Hex);
+    return resultat;
 }
 
-// Fonction pour chiffrer la clé AES avec XOR
-function chiffrerCleAESXor(cleHex, cleSecreteHex) {
-    return xorHex(cleHex, cleSecreteHex);
-}
-
-// Fonction pour déchiffrer la clé AES avec XOR
-function dechiffrerCleAESXor(cleChiffreeHex, cleSecreteHex) {
-    return xorHex(cleChiffreeHex, cleSecreteHex);
+// Fonction pour générer une clé aléatoire pour Vigenère (entre 3 et 10 caractères)
+function genererCleVigenere() {
+    const longueur = Math.floor(Math.random() * 8) + 3; // Entre 3 et 10 caractères
+    let cle = "";
+    for (let i = 0; i < longueur; i++) {
+        cle += String.fromCharCode(Math.floor(Math.random() * 26) + 97); // Lettres minuscules
+    }
+    return cle;
 }
 
 // Fonction pour générer un vecteur d'initialisation aléatoire (AES)
@@ -138,13 +167,17 @@ document.getElementById("chat-form").addEventListener("submit", (e) => {
     if (currentEncryption === "cesar") {
         const key = Math.floor(Math.random() * 25) + 1; // Générer une clé aléatoire entre 1 et 25
         messageChiffre = chiffrerCesar(messageNormalise, key);
-        keyChiffree = chiffrerCleXor(key);
+        keyChiffree = chiffrerXOR(key.toString(), cleSecreteXOR); // Chiffrer la clé César avec XOR
     } else if (currentEncryption === "aes") {
         const key = genererCleAES(); // Générer une clé AES aléatoire
         const iv = genererIV(); // Générer un IV aléatoire
         messageChiffre = chiffrerAES(messageNormalise, key, iv);
-        keyChiffree = chiffrerCleAESXor(key, cleSecreteAES); // Chiffrer la clé AES avec XOR
-        ivChiffree = chiffrerCleAESXor(iv, cleSecreteAES); // Chiffrer l'IV avec XOR
+        keyChiffree = chiffrerXOR(key, cleSecreteAES); // Chiffrer la clé AES avec XOR
+        ivChiffree = chiffrerXOR(iv, cleSecreteAES); // Chiffrer l'IV avec XOR
+    } else if (currentEncryption === "vigenere") {
+        const key = genererCleVigenere(); // Générer une clé Vigenère aléatoire
+        messageChiffre = chiffrerVigenere(messageNormalise, key);
+        keyChiffree = chiffrerXOR(key, cleSecreteXOR); // Chiffrer la clé Vigenère avec XOR
     } else {
         messageChiffre = messageNormalise; // Pas de chiffrement
         keyChiffree = "NONE"; // Clé factice
@@ -182,12 +215,15 @@ function fetchMessages() {
                 let messageClair;
 
                 if (msg.encryption === "cesar") {
-                    const cleDechiffree = dechiffrerCleXor(msg.key); // Déchiffrer la clé avec XOR
-                    messageClair = dechiffrerCesar(msg.msg, cleDechiffree); // Déchiffrer le message
+                    const cleDechiffree = dechiffrerXOR(msg.key, cleSecreteXOR); // Déchiffrer la clé César
+                    messageClair = dechiffrerCesar(msg.msg, parseInt(cleDechiffree)); // Déchiffrer le message
                 } else if (msg.encryption === "aes") {
-                    const keyClair = dechiffrerCleAESXor(msg.key, cleSecreteAES); // Déchiffrer la clé AES
-                    const ivClair = dechiffrerCleAESXor(msg.iv, cleSecreteAES); // Déchiffrer l'IV
+                    const keyClair = dechiffrerXOR(msg.key, cleSecreteAES); // Déchiffrer la clé AES
+                    const ivClair = dechiffrerXOR(msg.iv, cleSecreteAES); // Déchiffrer l'IV
                     messageClair = dechiffrerAES(msg.msg, keyClair, ivClair); // Déchiffrer le message
+                } else if (msg.encryption === "vigenere") {
+                    const cleDechiffree = dechiffrerXOR(msg.key, cleSecreteXOR); // Déchiffrer la clé Vigenère
+                    messageClair = dechiffrerVigenere(msg.msg, cleDechiffree); // Déchiffrer le message
                 } else {
                     messageClair = msg.msg; // Texte clair directement
                 }
