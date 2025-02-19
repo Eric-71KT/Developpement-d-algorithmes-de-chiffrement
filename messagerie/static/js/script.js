@@ -37,16 +37,16 @@ function xorBinaire(binaire1, binaire2) {
     return resultat;
 }
 
-// Fonction pour chiffrer la clé avec XOR
-function chiffrerCleXor(cle, cleSecrete = "1010") {
-    const cleBinaire = cle.toString(2).padStart(4, '0'); // Convertir en binaire sur 4 bits
-    return xorBinaire(cleBinaire, cleSecrete);
-}
-
 // Fonction pour déchiffrer la clé avec XOR
 function dechiffrerCleXor(cleChiffree, cleSecrete = "1010") {
     const cleBinaire = xorBinaire(cleChiffree, cleSecrete);
     return parseInt(cleBinaire, 2); // Convertir en nombre
+}
+
+// Fonction pour chiffrer la clé avec XOR
+function chiffrerCleXor(cle, cleSecrete = "1010") {
+    const cleBinaire = cle.toString(2).padStart(4, '0'); // Convertir en binaire sur 4 bits
+    return xorBinaire(cleBinaire, cleSecrete);
 }
 
 // Rejoindre une salle
@@ -54,19 +54,29 @@ document.getElementById("login-form").addEventListener("submit", (e) => {
     e.preventDefault();
     currentUser = document.getElementById("username").value;
     currentRoom = document.getElementById("room").value;
-    currentEncryption = document.getElementById("encryption-type").value; // Récupérer le type de chiffrement
 
     // Masquer le formulaire de connexion et afficher le chat
     document.getElementById("login").style.display = "none";
     document.getElementById("chat").style.display = "block";
 
     // Afficher le pseudo et le nom de la salle
-    document.getElementById("chat-header").innerHTML = `
-        <h4>Messagerie en temps réel - ${currentUser} (Salle: ${currentRoom})</h4>
-    `;
+    updateChatHeader();
 
     // Commencer à récupérer les messages
     fetchMessages();
+});
+
+// Mettre à jour l'en-tête du chat
+function updateChatHeader() {
+    document.getElementById("chat-header").innerHTML = `
+        <h4>Messagerie en temps réel - ${currentUser} (Salle: ${currentRoom}) - Chiffrement: ${currentEncryption}</h4>
+    `;
+}
+
+// Changer le type de chiffrement
+document.getElementById("encryption-type").addEventListener("change", (e) => {
+    currentEncryption = e.target.value;
+    updateChatHeader();
 });
 
 // Envoyer un message
