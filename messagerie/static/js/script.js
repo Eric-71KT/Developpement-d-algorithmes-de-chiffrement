@@ -2,7 +2,8 @@ let currentUser = null;
 let currentRoom = null;
 let currentEncryption = "cesar"; // Type de chiffrement par défaut
 const cleSecreteXOR = "1010"; // Clé secrète pour XOR (utilisée pour César et Vigenère)
-const cleSecreteAES = CryptoJS.lib.WordArray.random(16).toString(CryptoJS.enc.Hex); // Clé secrète AES (128 bits)
+let cleSecreteAES = CryptoJS.lib.WordArray.random(16).toString(CryptoJS.enc.Hex); // Clé secrète AES (128 bits)
+let ivAES = CryptoJS.lib.WordArray.random(16).toString(CryptoJS.enc.Hex); // IV AES (128 bits)
 
 // Fonction pour normaliser les caractères accentués
 function normaliserTexte(texte) {
@@ -104,16 +105,6 @@ function genererCleVigenere() {
     return cle;
 }
 
-// Fonction pour générer un vecteur d'initialisation aléatoire (AES)
-function genererIV() {
-    return CryptoJS.lib.WordArray.random(16).toString(CryptoJS.enc.Hex);
-}
-
-// Fonction pour générer une clé aléatoire (AES)
-function genererCleAES() {
-    return CryptoJS.lib.WordArray.random(16).toString(CryptoJS.enc.Hex);
-}
-
 // Fonction de chiffrement AES
 function chiffrerAES(message, cle, iv) {
     return CryptoJS.AES.encrypt(message, CryptoJS.enc.Hex.parse(cle), { iv: CryptoJS.enc.Hex.parse(iv) }).toString();
@@ -169,11 +160,9 @@ document.getElementById("chat-form").addEventListener("submit", (e) => {
         messageChiffre = chiffrerCesar(messageNormalise, key);
         keyChiffree = chiffrerXOR(key.toString(), cleSecreteXOR); // Chiffrer la clé César avec XOR
     } else if (currentEncryption === "aes") {
-        const key = genererCleAES(); // Générer une clé AES aléatoire
-        const iv = genererIV(); // Générer un IV aléatoire
-        messageChiffre = chiffrerAES(messageNormalise, key, iv);
-        keyChiffree = chiffrerXOR(key, cleSecreteAES); // Chiffrer la clé AES avec XOR
-        ivChiffree = chiffrerXOR(iv, cleSecreteAES); // Chiffrer l'IV avec XOR
+        messageChiffre = chiffrerAES(messageNormalise, cleSecreteAES, ivAES);
+        keyChiffree = chiffrerXOR(cleSecreteAES, cleSecreteXOR); // Chiffrer la clé AES avec XOR
+        ivChiffree = chiffrerXOR(ivAES, cleSecreteXOR); // Chiffrer l'IV avec XOR
     } else if (currentEncryption === "vigenere") {
         const key = genererCleVigenere(); // Générer une clé Vigenère aléatoire
         messageChiffre = chiffrerVigenere(messageNormalise, key);
@@ -218,8 +207,8 @@ function fetchMessages() {
                     const cleDechiffree = dechiffrerXOR(msg.key, cleSecreteXOR); // Déchiffrer la clé César
                     messageClair = dechiffrerCesar(msg.msg, parseInt(cleDechiffree)); // Déchiffrer le message
                 } else if (msg.encryption === "aes") {
-                    const keyClair = dechiffrerXOR(msg.key, cleSecreteAES); // Déchiffrer la clé AES
-                    const ivClair = dechiffrerXOR(msg.iv, cleSecreteAES); // Déchiffrer l'IV
+                    const keyClair = dechiffrerXOR(msg.key, cleSecreteXOR); // Déchiffrer la clé AES
+                    const ivClair = dechiffrerXOR(msg.iv, cleSecreteXOR); // Déchiffrer l'IV
                     messageClair = dechiffrerAES(msg.msg, keyClair, ivClair); // Déchiffrer le message
                 } else if (msg.encryption === "vigenere") {
                     const cleDechiffree = dechiffrerXOR(msg.key, cleSecreteXOR); // Déchiffrer la clé Vigenère
